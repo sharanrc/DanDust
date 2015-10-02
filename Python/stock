@@ -1,0 +1,2 @@
+import Stock
+print Stock.get_quote('goog')

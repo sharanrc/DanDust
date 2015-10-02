@@ -1,0 +1,12 @@
+#! /usr/bin/python
+import urllib
+import re
+
+
+base_url = 'http://finance.google.com/finance?q=goog'
+content = urllib.urlopen(base_url).read()
+line =re.search('id=ref_694653_l(.*?)', content)
+if(line):
+    print line.group();
+else:
+    print "Dint FInd"
