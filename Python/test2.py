@@ -1,18 +1,18 @@
 #!/usr/bin/python
 import re
-import urllib
-base_url = 'http://finance.google.com/finance?q=goog'
+import time
+import getch
+import kbh
+from googleapi import getQuotes
+import json
 
-content = urllib.urlopen(base_url).read()
-#line=f.readline()
-#while line :
-#line=f.readline()
-mathcc= re.fin('id="ref_665234_l">.+?>(.*?)<',content)
-
-mathc= re.search('id="ref_665234(.*?)">\(*(.*?)\)*?<',content)
-if(mathc):
-    print mathc.group(1)
-    print mathc.group(2)
-if(mathcc):
-
-    print mathcc.group(1)
+kb=kbh.KBHit()
+symbol=raw_input("Enter Company Symbol:");
+m= re.search(r'"LastTradeWithCurrency":.*?Rs\.(.*?)"',json.dumps(getQuotes(symbols=symbol),indent=2))
+print m.group(1)
+while True:
+    key==kb.kbhit()
+    if (key==27):
+        break;
+    time.sleep(1)
+    print m.group(1)
