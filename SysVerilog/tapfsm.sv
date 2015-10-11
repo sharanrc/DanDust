@@ -1,76 +1,159 @@
 
 
-module tap (input tdi,
+module tap (
             input reset_b,
             input tms,
             input clk,
-            output tdo);
+            output sl_DR,
+            output sl_IR,
+            output c_DR,
+            output c_IR,
+            output sh_DR,
+            output sh_IR,
+            output u_DR,
+            output u_IR
+            );
 
-    parameter   trst = 4'b0000,
-                idle = 4'b0001,
-                sel_DR = 4'b0011,
-                cap_DR = 4'b0010,
-                shi_DR = 4'b0110,
-                exi1_DR = 4'b0111,
-                pau_DR = 4'b0101,
-                exi2_DR = 4'b0100,
-                upd_DR = 4'b1100,
-                sel_IR = 4'b1101,
-                cap_IR = 4'b1111,
-                shi_IR = 4'b1110,
-                exi1_IR = 4'b1010,
-                pau_IR = 4'b1011,
-                exi2_IR = 4'b1001,
-                upd_IR = 4'b1000;
+wire [7:0] out_sig;
+assign out_sig = {sl_DR,sl_IR,c_DR,c_IR,sh_DR,sh_IR,u_DR,u_IR};
 
-reg [3:0] p_state,n_state;
-reg [7:0] idcode,idcode_shift,mbist,mbist_shift;
-reg [2:0] irreg,irreg_shift;
-reg [0:0] bypass_shift;
-wire drmuxout;
+    parameter   trst = 0,
+                idle = 1,
+                sel_DR = 2,
+                cap_DR = 3,
+                shi_DR = 4,
+                exi1_DR = 5,
+                pau_DR = 6,
+                exi2_DR = 7,
+                upd_DR = 8,
+                sel_IR = 9,
+                cap_IR = 10,
+                shi_IR = 11,
+                exi1_IR = 12,
+                pau_IR = 13,
+                exi2_IR = 14,
+                upd_IR = 15;
+
+reg [15:0] p_state,n_state;
 
 always_ff@(negedge clk or negedge reset_b)
 begin
+    p_state = 'b0;
     if(!reset_b)
-        p_state = idle;
+        p_state[trst] <= 1'b1;
     else
-        p_state = n_state;
+        p_state <= n_state;
 end
 
-always_ff@(posedge clk)
-    
-    case(p_state)
-        trst:   begin
-                if(tms==1'b1)
-                    n_state=trst;
-                else
-                    n_state=idle;
-                end
-        idle:   begin
-                if(tms==1'b1)
-                    n_state=sel_DR;
-                else
-                    n_state = idle;
-                end
-        sel_DR: begin
-                if(tms==1'b1)
-                    n_state = sel_IR;
-                else
-                    n_state = cap_DR;
-                case (irreg)
-                3'b000: begin
-                        bypass_shift <= tdi;
-                        drmuxout <= bypass_shift;
-                3'b001: begin
-                        idcode_shift[7]<=tdi;
-                        drmuxout<= idcode_shift[0];
+always_cc(p_state)
+begin
+    n_state = 'b0;
+    out_sig = 'b0;
+    case(1'b1)
+        p_state[trst]:   begin
+                            if(tms==1'b1)
+                            n_state[trst] = 1'b1;
+
+                            else
+                            n_state[idle] = 1'b1;
                         end
-                3'b010: begin
-                        mbist_shift[7] <= tdi;
-                        drmuxout <= mbist_shift[0];
-                default:
-                        drmuxout <= 'bxxxxxxxxx;
+        p_state[idle]:   begin
+                            if(tms == 1'b1)
+                                n_state[sel_DR] = 1'b1;
+                            else
+                                n_state[idle] = 1'b1;
+                        end
+        p_state[sel_DR]: begin
+                            if(tms == 1'b1)
+                                n_state[sel_IR]=1'b1;
+                            else
+                                n_state[cap_DR] = 1'b1;
+                        end
+        p_state[cap_IR]: begin
+                            if(tms == 1'b1)
+                                n_state[exi1_DR] = 1'b1;
+                            else
+                                n_state[shi_DR] = 1'b1;
+                        end
+        p_state[shi_DR]: begin
+                            if(tms==1'b1)
+                                n_state[exi1_DR] = 1'b1;
+                            else
+                                n_state[shi_DR] = 1'b1;
+                        end
+        p_state[exi1_DR]: begin
+                            if(tms == 1'b1)
+                                n_state[upd_DR] = 1'b1;
+                            else
+                                n_stat[pau_DR] = 1'b1;
+                        end
+        p_state[pau_DR]: begin
+                            if(tms==1'b1)
+                                n_state[exi2_DR] = 1'b1;
+                            else
+                                n_state[pau_DR] = 1'b1;
+                        end
+        p_state[exi2_DR]: begin
+                            if(tms==1'b1)
+                                n_state[upd_DR] = 1'b1;
+                            else
+                                n_state[shi_DR] = 1'b1;
+                        end
+        p_state[upd_DR]: begin
+                            if(tms==1'b1)
+                                n_state[sel_DR] = 1'b1;
+                            else
+                                n_state[idle] = 1'b1;
+                        end
+        p_state[sel_IR]: begin
+                            if(tms==1'b1)
+                                n_state[trst] = 1'b1;
+                            else
+                                n_state[cap_IR] = 1'b1;
+                        end
+        p_state[cap_IR]: begin
+                            if(tms==1'b1)
+                                n_state[exi1_IR] = 1'b1;
+                            else
+                                n_state[shi_IR] = 1'b1;
+                        end
+        p_state[shi_IR]: begin
+                            if(tms==1'b1)
+                                n_state[exi1_IR] = 1'b1;
+                            else
+                                n_state[shi_IR] = 1'b1;
+                        end
+        p_state[exi1_IR]: begin
+                            if(tms==1'b1)
+                                n_state[upd_IR] = 1'b1;
+                            else
+                                n_state[pau_IR] = 1'b1;
+                        end
+        p_state[pau_IR]: begin
+                            if(tms==1'b1)
+                                n_state[exi2_IR] = 1'b1;
+                            else
+                                n_state[pau_IR] = 1'b1;
+                        end
+        p_state[exi2_IR]: begin
+                            if(tms==1'b1)
+                                n_state[upd_IR] = 1'b1;
+                            else
+                                n_state[shi_IR] = 1'b1;
+                        end
+        p_state[upd_IR]: begin
+                            if(tms==1'b1)
+                                n_state[sel_DR] = 1'b1;
+                            else
+                                n_state[idle] = 1'b1;
+                        end
+        default: n_state[trst]=1'b1;
+    endcase
+end
 
-
-
-
+always_cc(p_state)
+begin
+    case (1'b1)
+        p_state[trst]: out_sig = 'b0;
+        p_state[idle]: out_sig = 'b0;
+        p_state[]
